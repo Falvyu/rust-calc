@@ -1,0 +1,128 @@
+
+
+mod ast {
+
+    use std::rc::Rc;
+
+    enum CalcError {
+        NotEnoughArguments,
+        UnknownError,
+    }
+    
+    pub fn calc(op: &dyn Operation) -> Result<i32, CalcError> {
+        let mut stack: Vec<Rc<&dyn Operation>> = Vec::new();
+        let mut infix: Vec<Rc<&dyn Operation>> = Vec::new();
+
+        while !stack.is_empty() {
+            match stack.pop() {
+                Some(op) => {
+                    op.push_op(&mut infix);
+                    infix.push(Rc::clone(&op));
+                },
+                None => return Err(CalcError::UnknownError)
+            }
+        }
+
+        let mut num_stack = Vec::new();
+        let r;
+        for op in infix {
+            r = op.calc(&mut num_stack)
+        }
+        r
+    }
+    
+    pub trait Operation {
+        fn calc(self, args: &mut Vec<i32>) -> Result<i32, CalcError>;
+
+        fn push_op(self, infix: &mut Vec<Rc<&dyn Operation>>);                   
+    }
+
+    pub struct Add {
+        left: Rc<dyn Operation>,
+        right: Rc<dyn Operation>
+    }
+
+    pub struct Sub {
+        left: Rc<dyn Operation>,
+        right: Rc<dyn Operation>
+    }
+
+    pub struct Mult {
+        left: Rc<dyn Operation>,
+        right: Rc<dyn Operation>
+    }
+
+    pub struct Number {
+        x: i32,
+    }
+
+
+    
+    impl Operation for Add {
+        fn calc(self, args: &mut Vec<i32>) -> Result<i32, CalcError> {
+          
+            match (args.pop(), args.pop()) {
+                (Some(x), Some(y)) => {
+                    let r = x+y;
+                    args.push(r);
+                    Ok(r)
+                },
+                _ =>  Err(CalcError::NotEnoughArguments)            
+            }
+        }
+
+        fn push_op(self, infix: &mut Vec<Rc<&dyn Operation>>) {
+            infix.push(Rc::clone(self.left));
+            infix.push(Rc::clone(self.right));
+        }
+    }
+    
+    impl Operation for Sub {
+        fn calc(self, args: &mut Vec<i32>) -> Result<i32, CalcError> {
+
+            match (args.pop(), args.pop()) {
+                (Some(x), Some(y)) => {
+                    let r = x - y;
+                    args.push(r);
+                    Ok(r)                                 
+                },
+                _ => Err(CalcError::NotEnoughArguments)
+            }
+        }
+
+        fn push_op(self, infix: &mut Vec<Rc<&dyn Operation>>) {
+            infix.push(Rc::clone(self.left));
+            infix.push(Rc::clone(self.right));
+        }
+    }
+
+
+    impl Operation for Mult {
+        fn calc(self, args: &mut Vec<i32>) -> Result<i32, CalcError> {
+
+            match (args.pop(), args.pop()) {
+                (Some(x), Some(y)) => {
+                    let r = x*y;
+                    args.push(y);
+                    Ok(r)
+                },
+                _ => Err(CalcError::NotEnoughArguments)                
+            }
+        }
+
+        fn push_op(self, infix: &mut Vec<Rc<&dyn Operation>>) {
+            infix.push(Rc::clone(self.left));
+            infix.push(Rc::clone(self.right));
+        }
+    }
+
+    impl Operation for Number {
+        fn calc(self, args: &mut Vec<i32>) -> Result<i32, CalcError> {
+            args.push(self.x);
+            Ok(self.x)
+        }
+
+        fn push_op(self, infix: &mut Vec<Rc<&dyn Operation>>) {
+        }
+    }
+}

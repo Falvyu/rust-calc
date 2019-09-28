@@ -1,0 +1,130 @@
+
+use std::io;
+
+mod ast;
+//pub use crate::ast;
+
+pub trait Token {
+}
+
+#[derive(Debug)]
+pub struct Number {
+    x: i32,
+}
+
+#[derive(Debug)]
+pub struct Plus {
+}
+
+#[derive(Debug)]
+pub struct Minus {
+}
+
+#[derive(Debug)]
+pub struct Mult {
+}
+
+impl Token for Number {
+}
+
+impl Token for Plus {
+}
+
+impl Token for Minus {
+}
+
+impl Token for Mult  {
+}
+
+
+
+fn fibonacci(n: i32) -> i32{
+    let mut n1 = 1;
+    let mut n2 = 2;
+
+    if n < 2 {
+        return 1
+    }
+
+    for _i in 2..n {
+        n2 = n1 + n2;
+        n1 = n2 - n1;
+    }
+    n2
+}
+
+fn parse(text: &str) -> Vec<Box<dyn Token>> {
+    let mut vec: Vec<Box<dyn Token>> = Vec::new();
+    for token in text.split(" ") {
+        if let Ok(n) = token.trim().parse::<i32>() {
+            println!("Num = {}", n);
+            vec.push(Box::new(Number {x: n}));
+        } else {
+            match token {
+                "+" => vec.push(Box::new(Plus {})),
+                "-" => vec.push(Box::new(Minus {})),
+                "*" => vec.push(Box::new(Mult {})),
+                _ => println!("Unknown token"),
+            }
+        }
+    }
+    vec
+}
+
+fn main() {
+
+    println!("Enter a number");
+    
+    loop {
+        let mut guess = String::new();
+
+        io::stdin().read_line(&mut guess)
+            .expect("Failed to read line");
+
+        parse(&guess);
+
+        let guess: u32 = match guess.trim().parse() {
+            Ok(n) => n,
+            Err(_) => continue,
+        };
+        
+        println!("You guessed {}", guess);
+
+        break;
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fibonacci() {
+        assert_eq!(fibonacci(0), 1);
+        assert_eq!(fibonacci(1), 1);
+        assert_eq!(fibonacci(2), 2);
+        assert_eq!(fibonacci(4), 5);
+    }
+
+    #[test]
+    fn test_parse() {
+        let expected: Vec<Box<dyn Token>> = vec![
+            Box::new(Number {x: 2}),
+            Box::new(Plus {}),
+            Box::new(Number {x: 2}),
+            Box::new(Mult {}),
+            Box::new(Number {x: 3}),
+        ];
+
+        let result1 = parse("2 + 2 * 3");
+        let result2 = parse("2+2*3");
+        let result3 = parse("2+2*6");
+        let result4 = parse("2+2*66");
+        
+        assert_eq!(result1, expected);
+        assert_eq!(result2, expected);
+        assert_ne!(result3, expected);        
+    }
+}
+
